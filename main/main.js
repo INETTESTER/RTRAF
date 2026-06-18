@@ -13,6 +13,7 @@ import { api9 } from '../api/api9.js';
 import { api10 } from '../api/api10.js';
 import { api3 } from '../api/api3.js';
 import { api6 } from '../api/api6.js';
+import { api11 } from '../api/api11.js';
 
 
 
@@ -28,7 +29,8 @@ export default function () {    //เรียกใช้ API ใน export def
   //response = api7()
   //response = api8()
   //response = api9()
-  response = api10()
+  //response = api10()
+  response = api11()
 
 
   error_check(response);
