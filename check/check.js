@@ -2,6 +2,7 @@ import { check } from 'k6';
 
 export function error_check(response) {
   check(response, {
+    '101 Switching Protocols': (r) => r.status === 101,
     '200 OK': (r) => r.status === 200,
     '201 Created': (r) => r.status === 201,
     '204 No Content': (r) => r.status === 204,

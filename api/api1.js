@@ -10,17 +10,17 @@ export function api1() {
 
     const response = ws.connect(url, {}, function (socket) {
         socket.on('open', () => {
-            console.log('WebSocket connected');
+            //console.log('WebSocket connected');
 
-            socket.send(
-                JSON.stringify({
-                    id: 1,
-                    connect: {
-                        token: centrifugoToken,
-                        name: 'js',
-                    },
-                })
-            );
+            // socket.send(
+            //     JSON.stringify({
+            //         id: 1,
+            //         connect: {
+            //             token: centrifugoToken,
+            //             name: 'js',
+            //         },
+            //     })
+            // );
         });
 
         // socket.on('message', (data) => {
@@ -85,7 +85,7 @@ export function api1() {
         // }, 300000);
     });
 
-    console.log('Status:', response.status);
+    //console.log('Status:', response.status);
 
     return response;
 }
