@@ -43,11 +43,16 @@ export default function () {
   // VALUES
   // =========================
 
-  const avg = (httpDuration.avg || 0) / 1000;
-  const min = (httpDuration.min || 0) / 1000;
-  const max = (httpDuration.max || 0) / 1000;
-  const p90 = (httpDuration["p(90)"] || 0) / 1000;
-  const p95 = (httpDuration["p(95)"] || 0) / 1000;
+  // const avg = (httpDuration.avg || 0) / 1000;
+  // const min = (httpDuration.min || 0) / 1000;
+  // const max = (httpDuration.max || 0) / 1000;
+  // const p90 = (httpDuration["p(90)"] || 0) / 1000;
+  // const p95 = (httpDuration["p(95)"] || 0) / 1000;
+  const avg = ((httpDuration.avg || 0) / 1000).toFixed(2);
+  const min = ((httpDuration.min || 0) / 1000).toFixed(2);
+  const max = ((httpDuration.max || 0) / 1000).toFixed(2);
+  const p90 = ((httpDuration["p(90)"] || 0) / 1000).toFixed(2);
+  const p95 = ((httpDuration["p(95)"] || 0) / 1000).toFixed(2);
 
   const request = httpReqs.count || 0;
   const tps = (httpReqs.rate || 0).toFixed(2);
