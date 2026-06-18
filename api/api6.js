@@ -18,7 +18,7 @@ export function api6() {
 
     const response = http.post(url, payload, params);
 
-    console.log('Response body:', response.body);
+    //console.log('Response body:', response.body);
 
     return response;
 }
