@@ -3,19 +3,32 @@ import { sleep } from 'k6';
 import { error_check } from '../check/check.js';
 import { scenario } from 'k6/execution';
 import { DownloadFile, GetProfile, PostProfile, PostProfile_2, PostProfile_3, UploadFile } from '../api/example.js';
+import { api2 } from '../api/api2.js';
+import { api4 } from '../api/api4.js';
+import { api1 } from '../api/api1.js';
+import { api5 } from '../api/api5.js';
+import { api7 } from '../api/api7.js';
+import { api8 } from '../api/api8.js';
+import { api9 } from '../api/api9.js';
+import { api10 } from '../api/api10.js';
+import { api3 } from '../api/api3.js';
+import { api6 } from '../api/api6.js';
 
 
 
 //============================================================================
 
 export default function () {    //เรียกใช้ API ใน export default function
-  //response = GetProfile()
-  //response = PostProfile()
-  //response = PostProfile_2()
-  //response = PostProfile_3(scenario)
-  //response = DownloadFile()
-  //response = UploadFile()
-  //response = UploadFile_2()
+  //response = api1()
+  response = api2()
+  //response = api3()
+  //response = api4()
+  //response = api5()
+  //response = api6()
+  //response = api7()
+  //response = api8()
+  //response = api9()
+  //response = api10()
 
 
   error_check(response);
