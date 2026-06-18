@@ -12,136 +12,170 @@ const reportPath = `../report/${date}/${filename}.json`;
 const jsonData = open(reportPath);
 
 export default function () {
+
   const startIndex = google_link.indexOf('/d/') + 3;
   const endIndex = google_link.indexOf('/edit');
   const spreadsheetID = google_link.substring(startIndex, endIndex);
 
   const data = JSON.parse(jsonData);
 
-  const avgIterationDuration = data.metrics.http_req_duration.avg;
-  const minIterationDuration = data.metrics.http_req_duration.min;
-  const maxIterationDuration = data.metrics.http_req_duration.max;
-  const pnineone = data.metrics.http_req_duration["p(90)"];
-  const pninefive = data.metrics.http_req_duration["p(95)"];
-  const request = data.metrics.http_reqs.count;
-  const http_reqs_passes = data.metrics.http_req_failed.passes;
-  const tps = (data.metrics.http_reqs.rate).toFixed(2);
-  const testtime = Math.ceil(request / tps);
+  // =========================
+  // METRICS SAFE LOADER
+  // =========================
+  const metrics = data.metrics || {};
 
-  const avg = (avgIterationDuration / 1000).toFixed(2);
-  const min = (minIterationDuration / 1000).toFixed(2);
-  const max = (maxIterationDuration / 1000).toFixed(2);
-  const p90 = (pnineone / 1000).toFixed(2);
-  const p95 = (pninefive / 1000).toFixed(2);
+  const httpDuration = metrics.http_req_duration || {};
+  const httpReqs = metrics.http_reqs || {};
+  const httpFail = metrics.http_req_failed || {};
 
-  const check = data.root_group && data.root_group.checks ? data.root_group.checks : {};
+  const wsSessions = metrics.ws_sessions || {};
+  const isWS = Object.keys(wsSessions).length > 0;
 
-  const e200 = check['200 OK'] ? check['200 OK'].passes : 0;
-  const e201 = check['201 Created'] ? check['201 Created'].passes : 0;
-  const e204 = check['204 No Content'] ? check['204 No Content'].passes : 0;
-  const e400 = check['400 Bad Request'] ? check['400 Bad Request'].passes : 0;
-  const e401 = check['401 Unauthorized'] ? check['401 Unauthorized'].passes : 0;
-  const e403 = check['403 Forbidden'] ? check['403 Forbidden'].passes : 0;
-  const e404 = check['404 Not Found'] ? check['404 Not Found'].passes : 0;
-  const e422 = check['422 Unprocessable Content'] ? check['422 Unprocessable Content'].passes : 0;
-  const e429 = check['429 Too Many Requests'] ? check['429 Too Many Requests'].passes : 0;
-  const e500 = check['500 Internal Server Error'] ? check['500 Internal Server Error'].passes : 0;
-  const e502 = check['502 Bad Gateway'] ? check['502 Bad Gateway'].passes : 0;
-  const e503 = check['503 Service Unavailable'] ? check['503 Service Unavailable'].passes : 0;
-  const e504 = check['504 Gateway Timeout'] ? check['504 Gateway Timeout'].passes : 0;
+  // =========================
+  // WS → HTTP STATUS NORMALIZER
+  // =========================
+  const normalizeStatus = (status) => {
+    if (isWS && status === "101 Switching Protocols") return "200 OK";
+    return status;
+  };
 
-  const unknown = request - (e200 + e201 + e204 + e400 + e401 + e403 + e404 + e422 + e429 + e500 + e502 + e503 + e504);
-  const error = http_reqs_passes;
-  const sumerror = error - (unknown + e400 + e401 + e403 + e404 + e422 + e429 + e500 + e502 + e503 + e504);
+  // =========================
+  // VALUES
+  // =========================
+
+  const avg = (httpDuration.avg || 0) / 1000;
+  const min = (httpDuration.min || 0) / 1000;
+  const max = (httpDuration.max || 0) / 1000;
+  const p90 = (httpDuration["p(90)"] || 0) / 1000;
+  const p95 = (httpDuration["p(95)"] || 0) / 1000;
+
+  const request = httpReqs.count || 0;
+  const tps = (httpReqs.rate || 0).toFixed(2);
+
+  const error = httpFail.passes || 0;
+
+  const testtime = tps > 0 ? Math.ceil(request / tps) : 0;
+
+  // =========================
+  // CHECKS SAFE
+  // =========================
+
+  const checks = data.root_group?.checks || {};
+
+  const getCheck = (name) => checks[name]?.passes || 0;
+
+  // 🔥 APPLY WS mapping here
+  const e200 = getCheck(normalizeStatus('200 OK')) || getCheck('101 Switching Protocols');
+  const e201 = getCheck('201 Created');
+  const e204 = getCheck('204 No Content');
+
+  const e400 = getCheck('400 Bad Request');
+  const e401 = getCheck('401 Unauthorized');
+  const e403 = getCheck('403 Forbidden');
+  const e404 = getCheck('404 Not Found');
+  const e422 = getCheck('422 Unprocessable Content');
+  const e429 = getCheck('429 Too Many Requests');
+
+  const e500 = getCheck('500 Internal Server Error');
+  const e502 = getCheck('502 Bad Gateway');
+  const e503 = getCheck('503 Service Unavailable');
+  const e504 = getCheck('504 Gateway Timeout');
+
+  const unknown =
+    request - (e200 + e201 + e204 + e400 + e401 + e403 + e404 + e422 + e429 + e500 + e502 + e503 + e504);
+
+  const sumerror =
+    error - (unknown + e400 + e401 + e403 + e404 + e422 + e429 + e500 + e502 + e503 + e504);
+
   const finalunknown = unknown + sumerror;
+
+  // =========================
+  // TIME
+  // =========================
 
   const now = new Date();
   const startTime = new Date(now.getTime() - (testtime * 1000));
-  const endTime = new Date(now.getTime());
+
+  function formatTime(date) {
+    return `${date.getHours().toString().padStart(2, '0')}:` +
+      `${date.getMinutes().toString().padStart(2, '0')}:` +
+      `${date.getSeconds().toString().padStart(2, '0')}`;
+  }
+
+  // =========================
+  // LOG
+  // =========================
 
   console.log("API: " + projectname);
   console.log("ID: " + id);
+  console.log("TYPE: " + (isWS ? "WEBSOCKET" : "HTTP"));
   console.log("==============================");
   console.log(`Request: ${request}`);
 
-  const checks = data.root_group.checks;
   const filteredPasses = Object.keys(checks)
-    .filter((key) => checks[key].passes > 0)
-    .map((key) => ({
-      status: key,
-      passes: checks[key].passes
-    }));
+    .filter(k => checks[k].passes > 0)
+    .map(k => ({ status: k, passes: checks[k].passes }));
 
-  filteredPasses.forEach((item) => {
-    if (item.status === "200 OK" || item.status === "201 Created" || item.status === "204 No Content") {
-      console.log(`✅ ${item.status}: ${item.passes}`);
-    } else {
-      console.log(`❌ ${item.status}: ${item.passes}`);
-    }
+  filteredPasses.forEach(item => {
+    const normalized = normalizeStatus(item.status);
+    const ok = ["200 OK", "201 Created", "204 No Content"].includes(normalized);
+
+    console.log(`${ok ? "✅" : "❌"} ${item.status}: ${item.passes}`);
   });
 
-  if (error != 0) {
-    if (finalunknown != 0) {
+  if (error !== 0) {
+    if (finalunknown !== 0) {
       console.log("❓ Unknown errors : " + finalunknown);
     }
     console.log("⭐ Number of errors : " + error);
   }
 
+  // =========================
+  // POST GOOGLE SHEET
+  // =========================
+
   const sheetDB = 'https://script.google.com/macros/s/AKfycbzbMajrXU7q7t08h_iG22gukrzXmyHZnlOxaU30jNUXP0HlsbgB2bAdJM3MmjubZkR_/exec?action=insertsummary';
+
   const payload2 = {
-    projectname: projectname,
-    request: request,
-    date: date,
+    projectname,
+    request,
+    date,
     start: formatTime(startTime),
-    end: formatTime(endTime),
+    end: formatTime(new Date()),
     average: avg,
-    min: min,
-    max: max,
-    p90: p90,
-    p95: p95,
-    tps: tps,
-    error: error,
-    id: id,
-    e400: e400,
-    e401: e401,
-    e403: e403,
-    e404: e404,
-    e422: e422, // ✅ ส่งเข้า sheet
-    e429: e429,
-    e500: e500,
-    e502: e502,
-    e503: e503,
-    e504: e504,
+    min,
+    max,
+    p90,
+    p95,
+    tps,
+    error,
+    id,
+    e400,
+    e401,
+    e403,
+    e404,
+    e422,
+    e429,
+    e500,
+    e502,
+    e503,
+    e504,
     eunknow: finalunknown,
     vus: user,
-    duration: durationx
+    duration: durationx,
+    type: isWS ? "ws" : "http"
   };
 
-  const params2 = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  http.post(sheetDB, JSON.stringify(payload2), params2);
-
-  let urlgetdata = 'https://script.google.com/macros/s/AKfycbzbMajrXU7q7t08h_iG22gukrzXmyHZnlOxaU30jNUXP0HlsbgB2bAdJM3MmjubZkR_/exec?action=getdata';
-  let paramsgetdata = {
-    headersgetdata: {
-      'Content-Type': 'application/json'
-    },
-  };
-  let payloadgetdata = JSON.stringify({
-    projectnames: projectname,
-    sheetid: spreadsheetID,
+  http.post(sheetDB, JSON.stringify(payload2), {
+    headers: { 'Content-Type': 'application/json' },
   });
 
-  http.post(urlgetdata, payloadgetdata, paramsgetdata);
-}
+  const urlgetdata = 'https://script.google.com/macros/s/AKfycbzbMajrXU7q7t08h_iG22gukrzXmyHZnlOxaU30jNUXP0HlsbgB2bAdJM3MmjubZkR_/exec?action=getdata';
 
-function formatTime(date) {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const seconds = date.getSeconds();
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  http.post(urlgetdata, JSON.stringify({
+    projectnames: projectname,
+    sheetid: spreadsheetID,
+  }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
