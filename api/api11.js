@@ -3,7 +3,7 @@ import { token } from './env.js';
 
 export function api11() {
     const url =
-        'https://uat-thapthaitalk.one.th/rtarf-backend/api/v1/chat/92c0502f-d37d-42e6-bf0f-dc694b3da8dd/send-message';
+        'https://uat-thapthaitalk.one.th/rtarf-backend/api/v2/chat/92c0502f-d37d-42e6-bf0f-dc694b3da8dd/send-message';
 
     const payload = JSON.stringify({
         message: 'สวัสดีชาวโลก',
