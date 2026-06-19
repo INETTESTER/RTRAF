@@ -20,8 +20,8 @@ import { api11 } from '../api/api11.js';
 //============================================================================
 
 export default function () {    //เรียกใช้ API ใน export default function
-  response = api1()
-  //response = api2()
+  //response = api1()
+  response = api2()
   //response = api3()
   //response = api4()
   //response = api5()
