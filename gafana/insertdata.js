@@ -72,8 +72,21 @@ export default function () {
   // =========================
   // CHECKS
   // =========================
-  const checks = data.root_group?.checks || {};
-  const getCheck = (name) => checks[name]?.passes || 0;
+  const checks =
+    data.root_group &&
+      data.root_group.checks
+      ? data.root_group.checks
+      : {};
+
+  function getCheck(name) {
+    if (
+      checks[name] &&
+      typeof checks[name].passes !== 'undefined'
+    ) {
+      return checks[name].passes;
+    }
+    return 0;
+  }
 
   const e200 = getCheck(normalizeStatus('200 OK')) || getCheck('101 Switching Protocols');
   const e201 = getCheck('201 Created');
