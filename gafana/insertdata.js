@@ -19,9 +19,6 @@ export default function () {
 
   const data = JSON.parse(jsonData);
 
-  // =========================
-  // METRICS SAFE LOADER
-  // =========================
   const metrics = data.metrics || {};
 
   const httpDuration = metrics.http_req_duration || {};
@@ -29,10 +26,12 @@ export default function () {
   const httpFail = metrics.http_req_failed || {};
 
   const wsSessions = metrics.ws_sessions || {};
+  const wsSessionDuration = metrics.ws_session_duration || {};
+
   const isWS = Object.keys(wsSessions).length > 0;
 
   // =========================
-  // WS → HTTP STATUS NORMALIZER
+  // NORMALIZER
   // =========================
   const normalizeStatus = (status) => {
     if (isWS && status === "101 Switching Protocols") return "200 OK";
@@ -40,36 +39,42 @@ export default function () {
   };
 
   // =========================
-  // VALUES
+  // METRICS (HTTP + WS FIXED)
   // =========================
+  let avg, min, max, p90, p95, request, tps;
 
-  // const avg = (httpDuration.avg || 0) / 1000;
-  // const min = (httpDuration.min || 0) / 1000;
-  // const max = (httpDuration.max || 0) / 1000;
-  // const p90 = (httpDuration["p(90)"] || 0) / 1000;
-  // const p95 = (httpDuration["p(95)"] || 0) / 1000;
-  const avg = ((httpDuration.avg || 0) / 1000).toFixed(2);
-  const min = ((httpDuration.min || 0) / 1000).toFixed(2);
-  const max = ((httpDuration.max || 0) / 1000).toFixed(2);
-  const p90 = ((httpDuration["p(90)"] || 0) / 1000).toFixed(2);
-  const p95 = ((httpDuration["p(95)"] || 0) / 1000).toFixed(2);
+  if (isWS) {
+    // ===== WS MODE =====
+    avg = ((wsSessionDuration.avg || 0) / 1000).toFixed(2);
+    min = ((wsSessionDuration.min || 0) / 1000).toFixed(2);
+    max = ((wsSessionDuration.max || 0) / 1000).toFixed(2);
+    p90 = ((wsSessionDuration["p(90)"] || 0) / 1000).toFixed(2);
+    p95 = ((wsSessionDuration["p(95)"] || 0) / 1000).toFixed(2);
 
-  const request = httpReqs.count || 0;
-  const tps = (httpReqs.rate || 0).toFixed(2);
+    request = wsSessions.count || 0;
+    tps = (wsSessions.rate || 0).toFixed(2);
+
+  } else {
+    // ===== HTTP MODE =====
+    avg = ((httpDuration.avg || 0) / 1000).toFixed(2);
+    min = ((httpDuration.min || 0) / 1000).toFixed(2);
+    max = ((httpDuration.max || 0) / 1000).toFixed(2);
+    p90 = ((httpDuration["p(90)"] || 0) / 1000).toFixed(2);
+    p95 = ((httpDuration["p(95)"] || 0) / 1000).toFixed(2);
+
+    request = httpReqs.count || 0;
+    tps = (httpReqs.rate || 0).toFixed(2);
+  }
 
   const error = httpFail.passes || 0;
-
   const testtime = tps > 0 ? Math.ceil(request / tps) : 0;
 
   // =========================
-  // CHECKS SAFE
+  // CHECKS
   // =========================
-
   const checks = data.root_group?.checks || {};
-
   const getCheck = (name) => checks[name]?.passes || 0;
 
-  // 🔥 APPLY WS mapping here
   const e200 = getCheck(normalizeStatus('200 OK')) || getCheck('101 Switching Protocols');
   const e201 = getCheck('201 Created');
   const e204 = getCheck('204 No Content');
@@ -97,7 +102,6 @@ export default function () {
   // =========================
   // TIME
   // =========================
-
   const now = new Date();
   const startTime = new Date(now.getTime() - (testtime * 1000));
 
@@ -110,7 +114,6 @@ export default function () {
   // =========================
   // LOG
   // =========================
-
   console.log("API: " + projectname);
   console.log("ID: " + id);
   console.log("TYPE: " + (isWS ? "WEBSOCKET" : "HTTP"));
@@ -138,7 +141,6 @@ export default function () {
   // =========================
   // POST GOOGLE SHEET
   // =========================
-
   const sheetDB = 'https://script.google.com/macros/s/AKfycbzbMajrXU7q7t08h_iG22gukrzXmyHZnlOxaU30jNUXP0HlsbgB2bAdJM3MmjubZkR_/exec?action=insertsummary';
 
   const payload2 = {
