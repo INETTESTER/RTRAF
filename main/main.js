@@ -29,8 +29,8 @@ export default function () {    //เรียกใช้ API ใน export def
   //response = api7()
   //response = api8()
   //response = api9()
-  response = api10()
-  //response = api11()
+  //response = api10()
+  response = api11()
 
 
   error_check(response);
