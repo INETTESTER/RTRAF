@@ -22,7 +22,7 @@ import { api11 } from '../api/api11.js';
 export default function () {    //เรียกใช้ API ใน export default function
   // response = api1()
   // response = api2()
-  response = api3()
+  //response = api3()
   // response = api4()
   // response = api5()
   // response = api6()
@@ -30,7 +30,7 @@ export default function () {    //เรียกใช้ API ใน export def
   //response = api8()
   //response = api9()
   //response = api10()
-  // response = api11()
+  response = api11()
 
 
   error_check(response);
